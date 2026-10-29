@@ -46,6 +46,7 @@ frontend/build/
 .env.*
 !.env.example
 !.env.*.example
+.env.example
 
 # Logs and temporary files
 logs/
