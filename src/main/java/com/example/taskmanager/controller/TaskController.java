@@ -2,21 +2,15 @@ package com.example.taskmanager.controller;
 
 import com.example.taskmanager.entity.Task;
 import com.example.taskmanager.service.TaskService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 import jakarta.validation.Valid;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -28,36 +22,64 @@ public class TaskController {
         this.taskService = taskService;
     }
 
+    // Get tasks with pagination and sorting
     @GetMapping
-    public List<Task> getAllTasks() {
-        return taskService.getAllTasks();
+    public ResponseEntity<Page<Task>> getAllTasks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction
+    ) {
+        Page<Task> tasks = taskService.getAllTasks(
+                page,
+                size,
+                sortBy,
+                direction
+        );
+
+        return ResponseEntity.ok(tasks);
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Task createTask(@Valid @RequestBody Task task) {
-        return taskService.createTask(task);
-   }
+    // Get dashboard statistics
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Long>> getTaskStats() {
+        return ResponseEntity.ok(taskService.getTaskStats());
+    }
 
-    
+    // Get one task by ID
     @GetMapping("/{id}")
-    public Task getTaskById(@PathVariable Long id) {
-        return taskService.getTaskById(id);
+    public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
+        return ResponseEntity.ok(taskService.getTaskById(id));
     }
 
-    
+    // Create a task
+    @PostMapping
+    public ResponseEntity<Task> createTask(
+            @Valid @RequestBody Task task
+    ) {
+        Task createdTask = taskService.createTask(task);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(createdTask);
+    }
+
+    // Update a task
     @PutMapping("/{id}")
-    public Task updateTask(
+    public ResponseEntity<Task> updateTask(
             @PathVariable Long id,
-            @Valid @RequestBody Task task) {
+            @Valid @RequestBody Task task
+    ) {
+        Task updatedTask = taskService.updateTask(id, task);
 
-        return taskService.updateTask(id, task);
+        return ResponseEntity.ok(updatedTask);
     }
 
+    // Delete a task
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteTask(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
-    }
 
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -1,25 +1,31 @@
+# Project-specific generated files
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### STS ###
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# IDE / editor files
+.idea/
+.vscode/
+*.iws
+*.iml
+*.ipr
+*.class
+
+# STS / Spring Tool Suite
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
@@ -29,5 +35,36 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
-.vscode/
+# Node / frontend dependencies and build output
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# Environment secrets and local configs
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs and temporary files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Test coverage and generated local files
+coverage/
+*.local
