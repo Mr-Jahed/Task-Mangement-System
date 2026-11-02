@@ -32,6 +32,38 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
+  deploy-to-windows:
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: [self-hosted, Windows, X64]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        shell: powershell
+        run: |
+          $env:DOCKERHUB_TOKEN | docker login --username $env:DOCKERHUB_USERNAME --password-stdin
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull latest Docker images
+        shell: powershell
+        run: |
+          docker pull jahed0307/taskmanager-backend:latest
+          docker pull jahed0307/taskmanager-frontend:latest
+
+      - name: Deploy application
+        shell: powershell
+        run: |
+          docker compose up -d --no-build --no-deps --force-recreate backend frontend
+
+      - name: Verify deployment
+        shell: powershell
+        run: |
+          docker compose ps        
 
     # Database configuration for the test environment
     env:
@@ -111,3 +143,6 @@ jobs:
             jahed0307/taskmanager-frontend:1.0
             jahed0307/taskmanager-frontend:latest
             jahed0307/taskmanager-frontend:${{ github.sha }}
+
+
+ 
