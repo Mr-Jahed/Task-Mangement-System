@@ -429,7 +429,7 @@ function App() {
           </div>
 
           <div>
-            <h1>TaskFlow</h1>
+            <h1>TaskFlow by Jahed</h1>
             <p>Task Management Dashboard</p>
           </div>
         </div>
