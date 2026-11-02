@@ -1,0 +1,67 @@
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: taskmanager-mysql
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: taskmanager_db
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    image: jahed0307/taskmanager-backend:1.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: taskmanager-backend
+    restart: unless-stopped
+
+    ports:
+      - "8081:8081"
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/taskmanager_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    image: jahed0307/taskmanager-frontend:1.0
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    container_name: taskmanager-frontend
+    restart: unless-stopped
+
+    ports:
+      - "5173:80"
+
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
