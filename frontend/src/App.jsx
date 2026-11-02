@@ -767,7 +767,7 @@ function App() {
         </section>
 
         <footer className="app-footer">
-          <span>TaskFlow</span>
+          <span>TaskFlow-Mr Jahed</span>
           <span>Stay organized. Keep making progress.</span>
         </footer>
       </main>
