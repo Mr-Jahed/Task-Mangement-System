@@ -14,11 +14,11 @@ permissions:
   contents: read
 
 jobs:
+  # JOB 1: Build, test and publish Docker images
   build-and-push:
     name: Build, Test and Publish Docker Images
     runs-on: ubuntu-latest
 
-    # Temporary MySQL database for GitHub Actions tests
     services:
       mysql:
         image: mysql:8.4
@@ -32,15 +32,83 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
+
+    env:
+      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/taskmanager_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: testrootpassword
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Set up Java 27
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '27'
+          cache: maven
+
+      - name: Run backend tests
+        run: |
+          chmod +x mvnw
+          ./mvnw clean test
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            jahed0307/taskmanager-backend:1.0
+            jahed0307/taskmanager-backend:latest
+            jahed0307/taskmanager-backend:${{ github.sha }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            jahed0307/taskmanager-frontend:1.0
+            jahed0307/taskmanager-frontend:latest
+            jahed0307/taskmanager-frontend:${{ github.sha }}
+
+  # JOB 2: Deploy on your Windows PC
   deploy-to-windows:
+    name: Deploy to Windows PC
     needs: build-and-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: [self-hosted, Windows, X64]
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Login to Docker Hub
         shell: powershell
         run: |
@@ -58,91 +126,11 @@ jobs:
       - name: Deploy application
         shell: powershell
         run: |
+          Set-Location 'C:\Users\HP\Downloads\taskmanager\taskmanager'
           docker compose up -d --no-build --no-deps --force-recreate backend frontend
 
       - name: Verify deployment
         shell: powershell
         run: |
-          docker compose ps        
-
-    # Database configuration for the test environment
-    env:
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/taskmanager_db
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: testrootpassword
-
-    steps:
-      # 1. Checkout source code
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      # 2. Setup Java 27
-      - name: Set up Java 27
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '27'
-          cache: maven
-
-      # 3. Run backend tests
-      - name: Run backend tests
-        run: |
-          chmod +x mvnw
-          ./mvnw clean test
-
-      # 4. Setup Node.js 22
-      - name: Set up Node.js 22
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      # 5. Install frontend dependencies
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      # 6. Build React frontend
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
-      # 7. Setup Docker Buildx
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # 8. Login to Docker Hub
-      - name: Login to Docker Hub
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      # 9. Build and push backend image
-      - name: Build and push backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: ${{ github.event_name == 'push' }}
-          tags: |
-            jahed0307/taskmanager-backend:1.0
-            jahed0307/taskmanager-backend:latest
-            jahed0307/taskmanager-backend:${{ github.sha }}
-
-      # 10. Build and push frontend image
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: ${{ github.event_name == 'push' }}
-          tags: |
-            jahed0307/taskmanager-frontend:1.0
-            jahed0307/taskmanager-frontend:latest
-            jahed0307/taskmanager-frontend:${{ github.sha }}
-
-
- 
+          Set-Location 'C:\Users\HP\Downloads\taskmanager\taskmanager'
+          docker compose ps
